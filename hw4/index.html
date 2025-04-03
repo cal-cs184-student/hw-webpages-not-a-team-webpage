@@ -92,7 +92,7 @@
 					<figcaption>ks=500</figcaption>
 				  </td>
 				<td style="text-align: center;">
-				  <img src="img/2-1-normal" width="400px"/>
+				  <img src="img/2-1-normal.png" width="400px"/>
 				  <figcaption>ks=5000 (default)</figcaption>
 				</td>
 			  </tr>
@@ -108,7 +108,7 @@
 			  </tr>
 			</table>
 		</div>
-		In the falling stage, the smaller spring constants seemed to be willing to rotate a lot faster and also kind of fall while stretching. ks=50000 absolutely did not want to stretch and rotated with a slight bend while falling.<br>
+		In the falling stage, the smaller spring constants seemed to stretch while falling, changing the shape made by the falling cloth as time went on. ks=50000 absolutely did not want to stretch and rotated in a gentle curved shape while falling.<br>
 		In the final resting state, as can be seen in the images, the smaller ks values have a lot more wrinkles in the shape, while the bigger ks values are a lot straighter. This makes sense because the higher ks values would not want to bend as much as possible. <br>
 		In addition, the smaller spring constants seemed to be a lot more jittery and never really settled.<br><br>
 		Here are the results of pinned2.json with different density values:
@@ -136,7 +136,7 @@
 			  </tr>
 			</table>
 		</div>
-		Predictably, with density we see a much smaller inclinination of the cloth to droop. If we look at the center of the cloth at the top in density=2 vs density=50, we can clearly see the difference in height. This makes sense because more mass would make the force due to gravity much stronger, and require greater steady-state spring lengths to balance it.<br><br>
+		Predictably, with smaller density we see a much smaller inclinination of the cloth to droop. If we look at the center of the cloth at the top in density=2 vs density=50, we can clearly see the difference in height. This makes sense because more mass would make the force due to gravity much stronger, and require greater steady-state spring lengths to balance it.<br><br>
 		Damping seems to yield similar results, but the key difference is the rate at which the simulator operates. This makes sense, as we damp all motion in our simulation.<br>
 		<figure>
 			<img src="img/2-2-1.png" alt="Cloth draped over sphere" style="width:70%"/>
@@ -144,8 +144,8 @@
 		</figure>
 		<h2>Part 3: Handling collisions with other objects</h2>
 		<b>Describe your implementation of handling collisions with spheres and planes.</b><br>
-		A sphere collision occurs when the point mass's distance to the origin of the sphere is less than its radius. To move it out, we calculate the tangent point by adding a radius * normalized position - origin vector to the origin, and then computing the new position as <code>(tangent - pm.last_position) * (1-friction) + pm.last_position</code><br>
-		Plane collisions were a bit more complicated. We can write the path of our particle as a function of t in [0, 1] which linearly interpolates between the last position and the new position. We need to find t such that the point lies on the plane, which can be done by plugging in the parameterized point into the plane equation and solving for t like so:  \[\frac{\mathbf{n} \cdot (\mathbf{p} - \mathbf{p_m^{last}})}{\mathbf{n} \cdot (\mathbf{p_m} - \mathbf{p_m^{last}})}\]<br>
+		A sphere collision occurs when the point mass's distance to the origin of the sphere is less than its radius. To move it out, we calculate the tangent point by adding a radius * normalized position - origin vector to the origin, and then computing the new position as <code>(tangent - pm.last_position) * (1-friction) + pm.last_position</code>.<br>
+		Plane collisions were a bit more complicated. We can write the path of our particle as a function of t in [0, 1] which linearly interpolates between the last position and the new position. We need to find t such that the point lies on the plane, which can be done by plugging in the parameterized point into the plane equation. Isolating for t gives the following result (where p is the plane point and n is the plane normal):  \[\frac{\mathbf{n} \cdot (\mathbf{p} - \mathbf{p_{t-1}})}{\mathbf{n} \cdot (\mathbf{p_t} - \mathbf{p_{t-1}})}\]<br>
 
 		<b>Show us screenshots of your shaded cloth from scene/sphere.json in its final resting state on the sphere using the default ks = 5000 as well as with ks = 500 and ks = 50000. Describe the differences in the results.</b><br>
 		<div style="display: flex; flex-direction: column; align-items: center;">
@@ -178,7 +178,7 @@
 		<h2>Part 4: Handling self-collisions</h2>
 		<b>Describe your implementation of handling self-collisions.</b><br>
 		So that we don't have to check each mass with every other mass, we split our space into cube chunks, and only check against point masses also in that chunk. 
-		To do this, we first call the build_spatial_map function, which stores a vector of vector of all point masses with matching hashes. To get the hash, we basically "round down" each component of the point masses position to the closest bottom left (minimum-valued) coordinate in that same chunk. We do this by doing fmod with the w/h/t values from the spec and then subtracting it from the position. I return this for the ID: <code>return box.z + height / t * (box.y + width / h * box.x);</code>, which basically uses the idea of storing a 3D matrix in a 1D vector (by multiplying each coordinate by the corresponding dimension). Now that we actually have a way of efficiently checking a self-collisions, when we do detect one (ie. distance < 2 * thickness), we ensure that the two points are 2 * thickness apart by changing them both by half the required amount. We accumulate these requested changes and then finally change the point by the average of all of these (in case there were multiple collisions). 
+		To do this, we first call the build_spatial_map function, which stores a vector of vector of all point masses with matching hashes. To get the hash, we basically "round down" each component of the point masses position to the closest bottom left (minimum-valued) coordinate in that same chunk. We do this by doing fmod with the w/h/t values from the spec and then subtracting it from the position. I return this for the ID: <code>return box.z + height / t * (box.y + width / h * box.x);</code>, which basically uses the idea of storing a 3D matrix in a 1D vector. Now that we actually have a way of efficiently checking for self-collisions, when we do detect one (ie. distance < 2 * thickness), we ensure that the two points are 2 * thickness apart by changing them both by half the required amount. We accumulate these requested changes and then finally change the point by the average of all of these (in case there were multiple collisions). 
 
 		<div style="display: flex; flex-direction: column; align-items: center;">
 			<table style="width: 100%; text-align: center; border-collapse: collapse;">
@@ -265,7 +265,7 @@
 
 		<h2>Part 5: Shaders</h2>
 		<b>Explain in your own words what is a shader program and how vertex and fragment shaders work together to create lighting and material effects.</b><br>
-		A shader program is a GPU-compatible program (that looks like C) that allows us take positions of 3D objects and figure out how to manipulate and shade them. The vertex shader takes model space values for vertices and outputs their corresponding world space values (such as position, normal, tangent, etc.). The fragment shader then uses these values to figure out which colors should exist at those points. It can also take things like camera position and lighting as an input. The colors can represent various shading algorithms that can help surfaces look like particular materials or make it appear like a light is at a certain position.
+		A shader program is a GPU-compatible program (written in GLSL for OpenGL) that allows us take positions of 3D objects and figure out how to manipulate and shade them. The vertex shader takes model space values for vertices and outputs their corresponding world space values (such as position, normal, tangent, etc.). The fragment shader then uses these values to figure out which colors should exist at those points. It can also take things like camera position and lighting as an input. The colors can represent various shading algorithms that can help surfaces look like particular materials or make it appear like a light is at a certain position.<br>
 
 		<b>Explain the Blinn-Phong shading model in your own words. Show a screenshot of your Blinn-Phong shader outputting only the ambient component, a screen shot only outputting the diffuse component, a screen shot only outputting the specular component, and one using the entire Blinn-Phong model.</b><br>
 		The Blinn-Phong shading model sums together three components of shading: ambient (raw, underlying color), specular (shiny reflections which change due to viewing angle), and diffuse (light scattering off a rough surface). Though not physically based, carefully choosing the various constants and balancing out these components can yield results that can look like a variety of realistic materials.
@@ -284,11 +284,11 @@
 			  <tr>
 				<td style="text-align: center;">
 				  <img src="img/5-2-3.png" width="400px"/>
-				  <figcaption>ks=50000 1</figcaption>
+				  <figcaption>Specular only</figcaption>
 				</td>
 				<td style="text-align: center;">
 					<img src="img/5-2-4.png" width="400px"/>
-					<figcaption>ks=50000 2</figcaption>
+					<figcaption>All</figcaption>
 				  </td>
 			  </tr>
 			</table>
@@ -349,7 +349,7 @@
 			  </tr>
 			</table>
 		</div>
-		The bump mapping seems pretty consistent. However, the displacement mapping changes significantly. With a coarser mesh having seemingly random and inaccurate displacements, while the finer mesh looks a lot more accurate. This shows a drawback of displacement mapping (if we only have coarse meshes).
+		The bump mapping seems pretty consistent. However, the displacement mapping changes significantly. With a coarser mesh having seemingly random and inaccurate displacements, while the finer mesh looks a lot more accurate. This shows a drawback of displacement mapping (if we only have coarse meshes).<br>
 		<b>Show a screenshot of your mirror shader on the cloth and on the sphere.</b><br>
 		<div style="display: flex; flex-direction: column; align-items: center;">
 			<table style="width: 100%; text-align: center; border-collapse: collapse;">
